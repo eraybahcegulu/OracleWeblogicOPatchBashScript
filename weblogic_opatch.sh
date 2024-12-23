@@ -37,9 +37,15 @@ else
     exit 1
 fi
 
-owner=$(stat -c %U "$middleware_path")
-if [ "$owner" != "$user" ]; then
-  echo "Middleware Path'$middleware_path' '$user' kullanıcısına ait değil. Geçerli sahip: $owner."
+middleware_path_owner=$(stat -c %U "$middleware_path")
+if [ "$middleware_path_owner" != "$user" ]; then
+  echo "Middleware Path'$middleware_path' '$user' kullanıcısına ait değil. Geçerli sahip: $middleware_path_owner."
+  exit 1
+fi
+
+patch_directory_path_owner=$(stat -c %U "$patch_directory_path")
+if [ "$patch_directory_path_owner" != "$user" ]; then
+  echo "Patch Directory Path'$patch_directory_path' '$user' kullanıcısına ait değil. Geçerli sahip: $patch_directory_path_owner."
   exit 1
 fi
 
