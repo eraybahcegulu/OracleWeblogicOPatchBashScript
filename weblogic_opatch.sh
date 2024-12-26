@@ -1,16 +1,22 @@
 #!/bin/bash
 
-middleware_path=$1
-patch_directory_path=$2
-user=$3
+oracle_home_path=$1
+jdk_path=$2
+patch_directory_path=$3
+user=$4
 
-if [ ! -d "$middleware_path" ]; then
-    echo "'$middleware_path' bulunamadı."
+if [ ! -d "$oracle_home_path" ]; then
+    echo "'$oracle_home_path' bulunamadı."
     exit 1
 fi
 
 if [ ! -d "$patch_directory_path" ]; then
     echo "'$patch_directory_path' bulunamadı."
+    exit 1
+fi
+
+if [ ! -d "$jdk_path" ]; then
+    echo "'$jdk_path' bulunamadı."
     exit 1
 fi
 
@@ -20,13 +26,25 @@ if [ "$(whoami)" != "$user" ]; then
     exit 1
 fi
 
-weblogic_opatch_path="$middleware_path/OPatch/opatch"
+weblogic_opatch_path="$oracle_home_path/OPatch/opatch"
 if [ ! -x "$weblogic_opatch_path" ]; then
     echo "'$weblogic_opatch_path' bulunamadı"
     exit 1
 fi
 
-echo "Middleware Path: $middleware_path"
+binary_patches_path="$patch_directory_path/binary_patches"
+if [ ! -d "$binary_patches_path" ]; then
+    echo "'$binary_patches_path' dizini bulunamadı."
+    exit 1
+fi
+
+binary_patches_path="$patch_directory_path/binary_patches"
+if [ ! -d "$binary_patches_path" ]; then
+    echo "'$binary_patches_path' dizini bulunamadı."
+    exit 1
+fi
+
+echo "Oracle_Home Path: $oracle_home_path"
 echo "Patch Directory Path: $patch_directory_path"
 read -p "Path onay (E/H): " confirm
 
@@ -37,9 +55,9 @@ else
     exit 1
 fi
 
-middleware_path_owner=$(stat -c %U "$middleware_path")
-if [ "$middleware_path_owner" != "$user" ]; then
-  echo "Middleware Path'$middleware_path' '$user' kullanıcısına ait değil. Geçerli sahip: $middleware_path_owner."
+oracle_home_path_owner=$(stat -c %U "$oracle_home_path")
+if [ "$oracle_home_path_owner" != "$user" ]; then
+  echo "Oracle_Home Path'$oracle_home_path' '$user' kullanıcısına ait değil. Geçerli sahip: $middleware_path_owner."
   exit 1
 fi
 
@@ -62,12 +80,14 @@ else
     echo "Çalışan Java processi bulunamadı"
 fi
 
-binary_patches_path="$patch_directory_path/binary_patches"
-if [ ! -d "$binary_patches_path" ]; then
-    echo "'$binary_patches_path' dizini bulunamadı."
-    exit 1
-fi
+opatch_generic_path=$(find "$patch_directory_path" -name "opatch_generic.jar" 2>/dev/null)
 
+if [ -n "$opatch_generic_path" ]; then
+  echo "opatch_generic.jar bulundu."
+  ${jdk_path}/bin/java -jar ${opatch_generic_path} -silent oracle_home=${oracle_home_path} && echo "opatch_generic.jar kuruldu." || echo "opatch_generic.jar kurulamadı."
+else
+  echo "opatch_generic.jar bulunamadı."
+fi
 
 find "$binary_patches_path" -type d \( -name "linux64" -o -name "generic" \) | while read -r platform_dir; do
     for patch_dir in "$platform_dir"/*; do
